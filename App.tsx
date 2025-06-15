@@ -17,6 +17,14 @@ export const useUserProfile = (): UserProfileContextType => {
   return context;
 };
 
+// Wrapper para QuizTakingView para forzar el remontado con una key
+const QuizTakingViewWrapper: React.FC<{ quizzes: Quiz[] }> = ({ quizzes }) => {
+  const { quizId } = useParams<{ quizId: string }>();
+  // La key es esencial aquí para asegurar que QuizTakingView se remonte
+  // cuando quizId cambie, reseteando su estado interno.
+  return <QuizTakingView key={quizId} quizzes={quizzes} />;
+};
+
 const App: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     try {
@@ -30,15 +38,16 @@ const App: React.FC = () => {
 
   const location = useLocation();
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isMuted, setIsMuted] = useState(true); // Start muted
+  const [isMuted, setIsMuted] = useState(true); // Comienza silenciado por defecto
 
   useEffect(() => {
-    // CRÍTICO: Se ha reemplazado la URL placeholder con la proporcionada por el usuario.
-    console.log('Creando instancia de Audio. Si esto se repite mucho, hay un problema.');
-    audioRef.current = new Audio("https://res.cloudinary.com/dyxvur3js/video/upload/v1750020168/Cancio%CC%81n_de_la_dulce_espera_p6v2lc.mp3"); 
-    audioRef.current.loop = true;
-    console.log('Audio source set to:', audioRef.current.src);
-  }, []); // El array vacío [] asegura que esto se ejecute solo una vez al montar.
+    console.log('Creando instancia de Audio. Esto debería ejecutarse solo una vez al montar App.');
+    if (!audioRef.current) { // Solo crea una nueva instancia si no existe
+        audioRef.current = new Audio("https://res.cloudinary.com/dyxvur3js/video/upload/v1750020168/Cancio%CC%81n_de_la_dulce_espera_p6v2lc.mp3");
+        audioRef.current.loop = true;
+        console.log('Audio source set to:', audioRef.current.src);
+    }
+  }, []); 
 
   useEffect(() => {
     if (audioRef.current) {
@@ -46,7 +55,6 @@ const App: React.FC = () => {
       console.log('Estado de isMuted cambiado a:', isMuted, 'Aplicado a audio.muted.');
       if (!isMuted) {
         console.log("Intentando reproducir audio. Fuente:", audioRef.current?.src);
-        // Intentar reproducir. Los navegadores pueden bloquear esto hasta una interacción del usuario.
         audioRef.current.play()
           .then(() => {
             console.log("Reproducción de audio iniciada exitosamente.");
@@ -56,22 +64,23 @@ const App: React.FC = () => {
             console.warn("La reproducción de audio fue prevenida. Esto sucede a menudo por políticas de autoplay del navegador. Se requiere interacción del usuario (como clic en el botón de desilenciar). También verifica que la URL del audio sea válida y accesible.");
           });
       } else {
-        audioRef.current.pause(); // Pausar explícitamente cuando se silencia.
+        audioRef.current.pause(); 
         console.log("Audio pausado (silenciado).");
       }
     } else {
         console.warn("audioRef.current es null en el efecto de isMuted. Esto no debería pasar si el efecto de inicialización funcionó.");
     }
-  }, [isMuted]); // Este efecto se ejecuta cuando isMuted cambia.
+  }, [isMuted]); 
 
   const toggleMute = useCallback(() => {
     console.log("toggleMute llamado. Estado actual de isMuted:", isMuted, "El nuevo estado será:", !isMuted);
     setIsMuted(prev => !prev);
-  }, [isMuted]); // isMuted es dependencia para que el log sea correcto.
+  }, []);
 
 
   useEffect(() => {
     localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
+    console.log("UserProfile actualizado en localStorage:", userProfile);
   }, [userProfile]);
 
   const addXp = useCallback((points: number) => {
@@ -79,10 +88,14 @@ const App: React.FC = () => {
   }, []);
 
   const markQuizCompleted = useCallback((quizId: string) => {
-    setUserProfile(p => ({
-      ...p,
-      completedQuizIds: Array.from(new Set([...p.completedQuizIds, quizId])),
-    }));
+    setUserProfile(p => {
+      const updatedProfile = {
+        ...p,
+        completedQuizIds: Array.from(new Set([...p.completedQuizIds, quizId])),
+      };
+      console.log(`Quiz ${quizId} marcado como completado. Nuevo completedQuizIds:`, updatedProfile.completedQuizIds);
+      return updatedProfile;
+    });
   }, []);
   
   const updateName = useCallback((name: string) => {
@@ -99,7 +112,8 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<HomePageView />} />
             <Route path="/quizzes" element={<QuizListView quizzes={QUIZZES_DATA} />} />
-            <Route path="/quiz/:quizId" element={<QuizTakingView quizzes={QUIZZES_DATA} />} />
+            {/* Usar el QuizTakingViewWrapper aquí */}
+            <Route path="/quiz/:quizId" element={<QuizTakingViewWrapper quizzes={QUIZZES_DATA} />} />
             <Route path="/perfil" element={<ProfileView />} />
           </Routes>
         </main>
