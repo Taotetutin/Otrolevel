@@ -3,6 +3,8 @@ import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { QuizQuestion } from '../types';
 import { APP_NAME, HOME_ICON_PATH, QUIZ_ICON_PATH, PROFILE_ICON_PATH } from '../constants'; 
+// SPEAKER_ON_ICON_PATH and SPEAKER_OFF_ICON_PATH are no longer used for the Navbar mute button
+// but kept in constants.ts in case they are needed elsewhere or for future changes.
 import { useUserProfile } from '../App'; 
 
 // Icon Component
@@ -18,7 +20,11 @@ export const Icon: React.FC<IconProps> = ({ path, className = 'w-6 h-6', viewBox
 );
 
 // Navbar Component
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  isMuted?: boolean;
+  toggleMute?: () => void;
+}
+export const Navbar: React.FC<NavbarProps> = ({ isMuted, toggleMute }) => {
   const { userProfile } = useUserProfile();
   const navItems = [
     { path: '/', label: 'Inicio', icon: HOME_ICON_PATH },
@@ -26,6 +32,7 @@ export const Navbar: React.FC = () => {
     { path: '/perfil', label: 'Mi Perfil', icon: PROFILE_ICON_PATH },
   ];
   const appIconUrl = "https://res.cloudinary.com/dyxvur3js/image/upload/v1750013745/a-3d-render-of-a-minimalist-black-and-wh_0sSTS0OyQeKMas8Um0RrRQ_p65JDA6HR7GpgsrHxV0diQ-removebg-preview_ltzhob.png";
+  const speakerIconUrl = "https://res.cloudinary.com/dyxvur3js/image/upload/v1750021085/speaker_3650896_nutjxr.svg";
 
   return (
     <nav className="bg-gradient-to-r from-violet-500 to-blue-500 text-white shadow-lg sticky top-0 z-50">
@@ -35,22 +42,33 @@ export const Navbar: React.FC = () => {
             <img src={appIconUrl} alt="App Icon" className="h-7 w-7 sm:h-8 sm:w-8 mr-2 rounded-sm" />
             {APP_NAME}
           </Link>
-          <div className="hidden md:flex items-center space-x-1">
-            {navItems.map(item => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-md text-sm font-medium hover:bg-white hover:bg-opacity-25 transition-all-smooth transform hover:scale-105 flex items-center space-x-2 ${
-                    isActive ? 'bg-white bg-opacity-30' : ''
-                  }`
-                }
+          <div className="flex items-center space-x-1">
+            <div className="hidden md:flex items-center space-x-1">
+              {navItems.map(item => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `px-3 py-2 rounded-md text-sm font-medium hover:bg-white hover:bg-opacity-25 transition-all-smooth transform hover:scale-105 flex items-center space-x-2 ${
+                      isActive ? 'bg-white bg-opacity-30' : ''
+                    }`
+                  }
+                >
+                  <Icon path={item.icon} className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+               <span className="px-4 py-2 text-sm font-medium">XP: {userProfile.xp}</span>
+            </div>
+            {toggleMute && typeof isMuted === 'boolean' && (
+              <button
+                onClick={toggleMute}
+                aria-label={isMuted ? "Activar sonido" : "Silenciar sonido"}
+                className="p-2 rounded-md hover:bg-white hover:bg-opacity-25 transition-all-smooth transform hover:scale-110 ml-2"
               >
-                <Icon path={item.icon} className="w-5 h-5" />
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-             <span className="px-4 py-2 text-sm font-medium">XP: {userProfile.xp}</span>
+                <img src={speakerIconUrl} alt={isMuted ? "Sonido desactivado" : "Sonido activado"} className="w-6 h-6" />
+              </button>
+            )}
           </div>
           {/* Mobile Menu Button - can be implemented later */}
         </div>

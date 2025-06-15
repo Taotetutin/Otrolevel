@@ -12,6 +12,7 @@ export interface Quiz {
   id: string;
   title: string;
   category: string;
+  categoryId?: string; // Optional: For more structured categorization if needed
   description: string;
   questions: QuizQuestion[];
   iconPath?: string; // SVG path data
